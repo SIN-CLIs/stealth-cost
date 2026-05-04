@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.0",
+  "description": "SOTAOptimizer: vereint alle 5 Kostenspar-Strategien in einer Pipeline",
+  "tools": [
+    {
+      "name": "sota-optimize",
+      "description": "Führt Prompt durch alle 5 Strategien: Cache→Compress→Route→Limit→API.",
+      "params": [
+        {"name": "prompt", "type": "string", "description": "Prompt-Text"},
+        {"name": "task_hint", "type": "string", "description": "Task-Hint: classify_element|verify_state|classify_page|analyze_context", "default": "mid"}
+      ],
+      "command": ["python3", "-c",
+        "import sys; sys.path.insert(0,'/Users/jeremy/dev/stealth-cost'); from stealth_cost import get_optimizer; import json; o=get_optimizer(); stats=o.stats(); print(json.dumps(stats, indent=2))",
+        "{prompt}", "{task_hint}"]
+    },
+    {
+      "name": "sota-complexity",
+      "description": "Schätzt Komplexität für Prompt: micro|mid|heavy.",
+      "params": [
+        {"name": "prompt", "type": "string", "description": "Prompt-Text", "required": true}
+      ],
+      "command": ["python3", "-c",
+        "import sys; sys.path.insert(0,'/Users/jeremy/dev/stealth-cost'); from stealth_cost import get_optimizer; o=get_optimizer(); print(o.estimate_complexity(sys.argv[1] if len(sys.argv)>1 else '', sys.argv[2] if len(sys.argv)>2 else ''))",
+        "{prompt}", ""]
+    },
+    {
+      "name": "sota-stats",
+      "description": "Zeigt kombinierte Stats aller 5 Strategien.",
+      "params": [],
+      "command": ["python3", "-c",
+        "import sys; sys.path.insert(0,'/Users/jeremy/dev/stealth-cost'); from stealth_cost import get_optimizer; import json; print(json.dumps(get_optimizer().stats(), indent=2))"]
+    },
+    {
+      "name": "sota-best-model",
+      "description": "Gibt bestes Modell für Komplexitäts-Level zurück.",
+      "params": [
+        {"name": "complexity", "type": "string", "description": "micro|mid|heavy", "required": true}
+      ],
+      "command": ["python3", "-c",
+        "import sys; sys.path.insert(0,'/Users/jeremy/dev/stealth-cost'); from stealth_cost import get_optimizer; o=get_optimizer(); print(o.best_model_for_complexity(sys.argv[1] if len(sys.argv)>1 else 'mid'))",
+        "{complexity}"]
+    }
+  ]
+}
