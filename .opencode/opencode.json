@@ -1,27 +1,26 @@
 {
   "schema_version": "1.0",
-  "description": "SOTAOptimizer: vereint alle 5 Kostenspar-Strategien in einer Pipeline",
+  "description": "SOTAOptimizer: 5 Kostenspar-Strategien + CodeBurn-Kosten-Observability",
   "tools": [
     {
       "name": "sota-optimize",
-      "description": "Führt Prompt durch alle 5 Strategien: Cache→Compress→Route→Limit→API.",
+      "description": "Fuehrt Prompt durch alle 5 Strategien: Cache->Compress->Route->Limit->API.",
       "params": [
         {"name": "prompt", "type": "string", "description": "Prompt-Text"},
-        {"name": "task_hint", "type": "string", "description": "Task-Hint: classify_element|verify_state|classify_page|analyze_context", "default": "mid"}
+        {"name": "task_hint", "type": "string", "description": "micro|mid|heavy", "default": "mid"}
       ],
       "command": ["python3", "-c",
-        "import sys; sys.path.insert(0,'/Users/jeremy/dev/stealth-cost'); from stealth_cost import get_optimizer; import json; o=get_optimizer(); stats=o.stats(); print(json.dumps(stats, indent=2))",
-        "{prompt}", "{task_hint}"]
+        "import sys; sys.path.insert(0,'/Users/jeremy/dev/stealth-cost'); from stealth_cost import get_optimizer; import json; print(json.dumps(get_optimizer().stats(), indent=2))"]
     },
     {
       "name": "sota-complexity",
-      "description": "Schätzt Komplexität für Prompt: micro|mid|heavy.",
+      "description": "Schaetzt Komplexitaet fuer Prompt: micro|mid|heavy.",
       "params": [
         {"name": "prompt", "type": "string", "description": "Prompt-Text", "required": true}
       ],
       "command": ["python3", "-c",
-        "import sys; sys.path.insert(0,'/Users/jeremy/dev/stealth-cost'); from stealth_cost import get_optimizer; o=get_optimizer(); print(o.estimate_complexity(sys.argv[1] if len(sys.argv)>1 else '', sys.argv[2] if len(sys.argv)>2 else ''))",
-        "{prompt}", ""]
+        "import sys; sys.path.insert(0,'/Users/jeremy/dev/stealth-cost'); from stealth_cost import get_optimizer; import sys as s2; o=get_optimizer(); print(o.estimate_complexity(s2.argv[1] if len(s2.argv)>1 else '', s2.argv[2] if len(s2.argv)>2 else ''))",
+        "{prompt}"]
     },
     {
       "name": "sota-stats",
@@ -32,13 +31,50 @@
     },
     {
       "name": "sota-best-model",
-      "description": "Gibt bestes Modell für Komplexitäts-Level zurück.",
+      "description": "Gibt bestes Modell fuer Komplexitaets-Level.",
       "params": [
         {"name": "complexity", "type": "string", "description": "micro|mid|heavy", "required": true}
       ],
       "command": ["python3", "-c",
-        "import sys; sys.path.insert(0,'/Users/jeremy/dev/stealth-cost'); from stealth_cost import get_optimizer; o=get_optimizer(); print(o.best_model_for_complexity(sys.argv[1] if len(sys.argv)>1 else 'mid'))",
+        "import sys; sys.path.insert(0,'/Users/jeremy/dev/stealth-cost'); from stealth_cost import get_optimizer; import sys as s2; o=get_optimizer(); print(o.best_model_for_complexity(s2.argv[1] if len(s2.argv)>1 else 'mid'))",
         "{complexity}"]
+    },
+    {
+      "name": "cost-status",
+      "description": "Token-Kosten und Budget-Status per CodeBurn.",
+      "params": [],
+      "command": ["python3", "-c",
+        "import sys; sys.path.insert(0,'/Users/jeremy/dev/stealth-cost'); from stealth_cost.codeburn_daemon import CodeBurnMonitor; import json; m=CodeBurnMonitor(); s=m.status(); s['budget_limit']=m.budget_limit; s['budget_pct']=m.budget_pct(); print(json.dumps(s,indent=2))"]
+    },
+    {
+      "name": "cost-optimize",
+      "description": "Token-Verschwendung analysieren per CodeBurn.",
+      "params": [
+        {"name": "period", "type": "string", "default": "30days"}
+      ],
+      "command": ["python3", "-c",
+        "import sys; sys.path.insert(0,'/Users/jeremy/dev/stealth-cost'); from stealth_cost.codeburn_daemon import CodeBurnMonitor; import json; m=CodeBurnMonitor(); opts=m.optimize(sys.argv[1] if len(sys.argv)>1 else '30days'); print(json.dumps(opts,indent=2) if opts else 'No suggestions')",
+        "{period}"]
+    },
+    {
+      "name": "cost-yield",
+      "description": "Agent-Produktivitaet (Yield) abrufen.",
+      "params": [
+        {"name": "period", "type": "string", "default": "week"}
+      ],
+      "command": ["python3", "-c",
+        "import sys; sys.path.insert(0,'/Users/jeremy/dev/stealth-cost'); from stealth_cost.codeburn_daemon import CodeBurnMonitor; import json; m=CodeBurnMonitor(); print(json.dumps(m.yield_report(sys.argv[1] if len(sys.argv)>1 else 'week'),indent=2))",
+        "{period}"]
+    },
+    {
+      "name": "cost-auto-optimize",
+      "description": "Wendet CodeBurn-Vorschlaege automatisch an.",
+      "params": [
+        {"name": "dry", "type": "string", "default": "true"}
+      ],
+      "command": ["python3", "-c",
+        "import sys; sys.path.insert(0,'/Users/jeremy/dev/stealth-cost'); from stealth_cost.auto_optimizer import AutoOptimizer; import json; a=AutoOptimizer(); r=a.apply(dry_run=sys.argv[1].lower()!='false' if len(sys.argv)>1 else True); print(json.dumps(r,indent=2))",
+        "{dry}"]
     }
   ]
 }
